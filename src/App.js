@@ -1,116 +1,119 @@
 import React, { useState, useEffect } from "react";
-import { CssBaseline, Container, Paper, Box, Grid } from "@material-ui/core";
+import { Auth } from "@aws-amplify/auth";
+import { AuthState, onAuthUIStateChange } from "@aws-amplify/ui-components";
+import { AmplifyAuthenticator, AmplifySignUp } from "@aws-amplify/ui-react";
+import { ThemeProvider } from "@material-ui/styles";
+import theme from "./theme";
+import { CssBaseline, Container, Grid } from "@material-ui/core";
+import awsconfig from "./awsconfig";
+import Header from "./Header";
+import Upload from "./Upload";
+import List from "./List";
 
-function App() {
+Auth.configure(awsconfig);
+const signUpFields = [
+  {
+    type: "username",
+    label: "Email Address",
+    placeholder: "Email Address",
+    hint: "username",
+    required: true,
+  },
+  {
+    type: "password",
+    label: "Password",
+    placeholder: "Password",
+    hint: null,
+    required: true,
+  },
+  {
+    type: "name",
+    label: "First Name",
+    placeholder: "First Name",
+    hint: null,
+    required: true,
+  },
+  {
+    type: "family_name",
+    label: "Last Name",
+    placeholder: "Last Name",
+    hint: null,
+    required: true,
+  },
+];
+
+let App = () => {
   let [images, setImages] = useState();
+  const [authState, setAuthState] = useState();
+  const [user, setUser] = React.useState();
+  let token = user && user.token;
+
+  useEffect(() => {
+    getImages();
+    return onAuthUIStateChange((nextAuthState, authData) => {
+      setAuthState(nextAuthState);
+      if (authData && authData.attributes) {
+        let user = {};
+        let { name, family_name, email } = authData.attributes;
+        user = {
+          name,
+          family_name,
+          email,
+        };
+        if (
+          authData &&
+          authData.signInUserSession.accessToken.payload["cognito:groups"] &&
+          authData.signInUserSession.accessToken.payload["cognito:groups"][0]
+        )
+          user.isAdmin = true;
+        user.token = authData.signInUserSession.idToken.jwtToken;
+        setUser(user);
+      }
+    });
+  }, [token]);
 
   const getImages = () => {
-    fetch("https://h04op1jbs4.execute-api.us-west-2.amazonaws.com/files")
+    if(user && user.token) {
+    fetch("https://h04op1jbs4.execute-api.us-west-2.amazonaws.com/files", {
+      headers: {
+        Authorization: user.token,
+      },
+    })
       .then((response) => response.json())
       .then((result) => {
         setImages(result);
       })
       .catch((error) => console.log("error", error));
+    }
   };
 
-  let [values, setValues] = useState({
-    name: "",
-    size: "",
-    type: "",
-  });
-
-  let [file, setFile] = useState();
-  useEffect(() => {
-    getImages();
-  }, []);
-
-  const handleChange = (event) => {
-    let { name, size, type } = event.target.files[0];
-    setValues({
-      name: name,
-      size: size,
-      type: type,
-    });
-    setFile(event.target.files[0]);
-  };
-
-  function getBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsBinaryString(file);
-      reader.onload = (event) => {
-        let binaryString = event.target.result;
-        resolve(btoa(binaryString));
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  }
-
-  const handleClick = () => {
-    getBase64(file).then((data) => {
-      let postData = {
-        file: data,
-        name: values.name,
-      };
-      console.log(postData);
-      fetch("https://h04op1jbs4.execute-api.us-west-2.amazonaws.com/files", {
-        method: "POST",
-        body: JSON.stringify(postData),
-      })
-        .then(() => getImages())
-        //.then((data) => console.log(data))
-        .catch((err) => console.log(err));
-    });
-  };
-  // const handleClick = () => {
-  //   let data = new FormData();
-  //   data.append("text", "hello");
-  //   data.append("file", file);
-  //   var requestOptions = {
-  //     method: 'POST',
-  //     body: data
-  //   };
-  //   fetch("https://h04op1jbs4.execute-api.us-west-2.amazonaws.com/files", requestOptions)
-  // .then(response => response.text())
-  // .then(result => console.log(result))
-  // .catch(error => console.log('error', error));
-  // }
   return (
-    <React.Fragment>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
       <Container maxWidth="lg">
-        <Paper>
-          <Box p={5}>
-            <Grid container>
-              <Grid item>
-                {images &&
-                  images.map((image) => (
-                    <Grid container>
-                      <Grid item><img src={`https://s3-us-west-1.amazonaws.com/anukurudi.com/${image.Key}`} width="100px" /></Grid>
-                      <Grid item>{image.Key}</Grid>
-                    </Grid>
-                  ))}
-              </Grid>
+        {authState === AuthState.SignedIn ? (
+          <Grid container justify="center" alignContent="center">
+            <Grid item xs>
+              <Header user={user} />
+              <Upload user={user} updateImages={getImages} />
+              <List user={user} updateImages={getImages} images={images} />
             </Grid>
-          </Box>
-        </Paper>
-        <Paper>
-          <Box p={5}>
-            <div className="App">
-              <input
-                type="file"
-                id="myFile"
-                name="filename"
-                onChange={handleChange}
-              />
-              <button type="button" onClick={handleClick}>
-                Upload
-              </button>
-            </div>
-          </Box>
-        </Paper>
+          </Grid>
+        ) : (
+          <Grid container justify="center" alignContent="center">
+            <Grid item>
+              <AmplifyAuthenticator usernameAlias="email">
+                <AmplifySignUp
+                  headerText="Sign UP To Upload Images"
+                  formFields={signUpFields}
+                  slot="sign-up"
+                />
+              </AmplifyAuthenticator>
+            </Grid>
+          </Grid>
+        )}
       </Container>
-    </React.Fragment>
+    </ThemeProvider>
   );
 }
 
