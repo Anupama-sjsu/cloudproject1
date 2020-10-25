@@ -1,6 +1,6 @@
 import React from "react";
 import { Snackbar } from "@material-ui/core";
-const Feedback = ({ show, message }) => {
+const Feedback = ({ show, message, handleClose }) => {
   return (
     <Snackbar
       anchorOrigin={{
@@ -8,7 +8,8 @@ const Feedback = ({ show, message }) => {
         horizontal: "left",
       }}
       open={show}
-      autoHideDuration={6000}
+      onClose={handleClose}
+      autoHideDuration={5000}
       message={message}
     />
   );

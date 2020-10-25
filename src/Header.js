@@ -13,6 +13,10 @@ const useStyles = makeStyles((theme) => ({
   title: {
     flexGrow: 1,
   },
+  admin: {
+    flexGrow: 3,
+    textAlign: "center"
+  },
 }));
 
 const Header = ({ user }) => {
@@ -27,17 +31,6 @@ const Header = ({ user }) => {
           <Typography variant="h6" className={classes.title}>
             File Uploader
           </Typography>
-          {/* <Typography variant="h6" className={classes.title}>
-            {user &&
-              user.signInUserSession.accessToken.payload["cognito:groups"] &&
-              user.signInUserSession.accessToken.payload["cognito:groups"][0]}
-          </Typography>
-          <Typography variant="h6" className={classes.title}>
-            {user && `Welcome ${user.attributes.email}`}
-          </Typography> */}
-          <Typography variant="h6" className={classes.title}>
-            {user && user.isAdmin && `ADMIN`}
-          </Typography>
           <Typography variant="h6" className={classes.title}>
             {user && `Welcome ${user.email}`}
           </Typography>
@@ -45,6 +38,9 @@ const Header = ({ user }) => {
             Logout
           </Button>
         </Toolbar>
+        <Typography variant="h6" className={classes.admin}>
+            {user && user.isAdmin && `ADMIN ACCOUNT`}
+          </Typography>
       </AppBar>
     </div>
   );

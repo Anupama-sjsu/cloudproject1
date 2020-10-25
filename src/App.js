@@ -8,7 +8,7 @@ import { CssBaseline, Container, Grid } from "@material-ui/core";
 import awsconfig from "./awsconfig";
 import Header from "./Header";
 import Upload from "./Upload";
-import List from "./List";
+import ListFiles from "./List";
 
 Auth.configure(awsconfig);
 const signUpFields = [
@@ -43,13 +43,13 @@ const signUpFields = [
 ];
 
 let App = () => {
-  let [images, setImages] = useState();
+  let [files, setFiles] = useState();
   const [authState, setAuthState] = useState();
   const [user, setUser] = React.useState();
   let token = user && user.token;
 
   useEffect(() => {
-    getImages();
+    getFiles();
     return onAuthUIStateChange((nextAuthState, authData) => {
       setAuthState(nextAuthState);
       if (authData && authData.attributes) {
@@ -72,7 +72,7 @@ let App = () => {
     });
   }, [token]);
 
-  const getImages = () => {
+  const getFiles = () => {
     if(user && user.token) {
     fetch("https://h04op1jbs4.execute-api.us-west-2.amazonaws.com/files", {
       headers: {
@@ -81,7 +81,7 @@ let App = () => {
     })
       .then((response) => response.json())
       .then((result) => {
-        setImages(result);
+        setFiles(result);
       })
       .catch((error) => console.log("error", error));
     }
@@ -95,8 +95,8 @@ let App = () => {
           <Grid container justify="center" alignContent="center">
             <Grid item xs>
               <Header user={user} />
-              <Upload user={user} updateImages={getImages} />
-              <List user={user} updateImages={getImages} images={images} />
+              <Upload user={user} updateFiles={getFiles} title="Upload File" method="POST" />
+              <ListFiles user={user} updateFiles={getFiles} files={files} />
             </Grid>
           </Grid>
         ) : (
@@ -104,7 +104,6 @@ let App = () => {
             <Grid item>
               <AmplifyAuthenticator usernameAlias="email">
                 <AmplifySignUp
-                  headerText="Sign UP To Upload Images"
                   formFields={signUpFields}
                   slot="sign-up"
                 />

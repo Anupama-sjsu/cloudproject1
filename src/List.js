@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Paper,
   Box,
@@ -9,12 +9,14 @@ import {
   CardContent,
   CardActions,
   IconButton,
+  Typography
 } from "@material-ui/core";
 import DeleteForeverIcon from "@material-ui/icons/DeleteForever";
 import CloudDownloadIcon from "@material-ui/icons/CloudDownload";
 import EditIcon from "@material-ui/icons/Edit";
 import { makeStyles } from "@material-ui/core/styles";
 import Feedback from "./Feedback";
+import UpdateDialog from "./UpdateDialog";
 const useStyles = makeStyles((theme) => ({
   root: {
     maxWidth: 345,
@@ -29,9 +31,13 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const List = ({ user, updateImages, images }) => {
+const ListFiles = ({ user, updateFiles, files }) => {
   const classes = useStyles();
   let [feedback, setFeedback] = useState();
+  let [updateValues, setUpdateValues] = useState({
+    key: null,
+    open: false,
+  });
   const handleDelete = (key) => {
     let deleteData = {
       key: key,
@@ -46,38 +52,74 @@ const List = ({ user, updateImages, images }) => {
       .then((response) => response.json())
       .then((data) => console.log(data))
       .then(() => {
-        updateImages();
+        updateFiles();
         setFeedback({
           show: true,
-          message: "Deleted"
-        })
+          message: "Deleted",
+        });
       })
       .catch((err) => console.log(err));
   };
 
-  const Sub = (image) => (
-    <>
-      <p>
-        {image.fname} {image.lname}
-      </p>
-      <p>{image.user_id}</p>
-    </>
-  );
+  const handleEdit = (key, description) => {
+    setUpdateValues({
+      key,
+      description,
+      open: true,
+    });
+  };
+
+  const handleDialogClose = () => {
+    setUpdateValues({
+      key: null,
+      open: false,
+      description: "",
+    });
+  };
+
+  const Sub = (file) => {
+    return (
+      <>
+        <Typography variant="caption" display="block">
+          {file.fname} {file.lname}
+        </Typography>
+        <Typography variant="caption" display="block">
+          {file.user_id}
+        </Typography>
+      </>
+    );
+  };
+
+  const handleFeedbackClose = () => {
+    setFeedback({
+      show: false,
+      message: "",
+    });
+  };
+
   return (
     <Paper>
-      <Feedback {...feedback} />
+      <UpdateDialog
+        user={user}
+        updateFiles={updateFiles}
+        description={updateValues.description}
+        open={updateValues.open}
+        fileKey={updateValues.key}
+        handleClose={handleDialogClose}
+      />
+      <Feedback {...feedback} handleClose={handleFeedbackClose} />
       <Box p={5}>
         <Grid container justify="flex-start">
-          {images &&
-            images.map((image, i) => {
+          {files &&
+            files.map((file) => {
               return (
-                <Grid item xs={3} key={i}>
+                <Grid item xs={3} key={file.key}>
                   <Card className={classes.root}>
                     <CardHeader
-                      title={image.key}
-                      subheader={Sub(image)}
+                      title={file.key}
+                      subheader={Sub(file)}
                       avatar={
-                        <a href={image.url} download>
+                        <a href={file.url} download>
                           <IconButton>
                             <CloudDownloadIcon />
                           </IconButton>
@@ -86,20 +128,34 @@ const List = ({ user, updateImages, images }) => {
                     />
                     <CardMedia
                       className={classes.media}
-                      image={image.url}
-                      title={image.Key}
+                      image={file.url}
+                      title={file.Key}
                     />
                     <CardContent>
-                      <p>{image.description}</p>
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        style={{ textAlign: "right" }}
+                      >
+                        Created: {new Date(file.crtd_date).toLocaleString()}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        style={{ textAlign: "right" }}
+                      >
+                        Updated:{" "}
+                        {new Date(file.updt_date).toLocaleString()}
+                      </Typography>
+                      <p>{file.description}</p>
                     </CardContent>
                     <CardActions disableSpacing>
-                      <IconButton aria-label="add to favorites">
+                      <IconButton
+                        onClick={() => handleEdit(file.key, file.description)}
+                      >
                         <EditIcon />
                       </IconButton>
-                      <IconButton
-                        aria-label="share"
-                        onClick={() => handleDelete(image.key)}
-                      >
+                      <IconButton onClick={() => handleDelete(file.key)}>
                         <DeleteForeverIcon />
                       </IconButton>
                     </CardActions>
@@ -112,4 +168,4 @@ const List = ({ user, updateImages, images }) => {
     </Paper>
   );
 };
-export default List;
+export default ListFiles;

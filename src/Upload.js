@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { nanoid } from "nanoid";
 import {
   Grid,
@@ -9,7 +9,9 @@ import {
   Button,
   TextField,
   FormGroup,
-  Box
+  Box,
+  Typography,
+  Divider,
 } from "@material-ui/core";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import Section from "./Section";
@@ -27,9 +29,17 @@ const getBase64 = (file) => {
   });
 };
 
-const Upload = ({ user, updateImages }) => {
+const Upload = ({
+  user,
+  updateFiles,
+  description,
+  title,
+  method,
+  fileKey,
+  handleClose,
+}) => {
   let [values, setValues] = useState({
-    description: "",
+    description: description ? description : "",
   });
 
   let [feedback, setFeedback] = useState();
@@ -49,8 +59,8 @@ const Upload = ({ user, updateImages }) => {
     } else {
       setValues({
         ...values,
-        fileName: null
-      })
+        fileName: null,
+      });
     }
   };
 
@@ -66,43 +76,69 @@ const Upload = ({ user, updateImages }) => {
     let file = fileInput.current.files[0];
     if (user && user.token) {
       getBase64(file).then((data) => {
-        let postData = {
-          file: data,
-          ...values,
-        };
-        console.log(postData);
+        let payload;
+        if (method === "POST") {
+          payload = {
+            file: data,
+            ...values,
+          };
+        } else if (method === "PUT") {
+          payload = {
+            file: data,
+            key: fileKey,
+            description: values.description,
+          };
+        }
         fetch("https://h04op1jbs4.execute-api.us-west-2.amazonaws.com/files", {
-          method: "POST",
+          method,
           headers: {
             Authorization: user.token,
           },
-          body: JSON.stringify(postData),
+          body: JSON.stringify(payload),
         })
           .then((response) => response.json())
           .then((data) => console.log(data))
           .then(() => {
-            updateImages();
+            updateFiles();
             fileInput.current.value = null;
             setValues({});
-            setFeedback({
-              show: true,
-              message: "Upload successful"
-            })
+            if (method === "POST") {
+              setFeedback({
+                show: true,
+                message: "Upload Complete",
+              });
+            } else if (method === "PUT") {
+              handleClose();
+              setFeedback({
+                show: true,
+                message: "File Updated",
+              });
+            }
           })
           .catch((err) => console.log(err));
       });
     }
   };
+  const handleFeedbackClose = () => {
+    setFeedback({
+      show: false,
+      message: "",
+    });
+  }
   return (
     <Section>
-      <Feedback {...feedback} />
+      <Feedback {...feedback} handleClose={handleFeedbackClose} />
       <Grid container justify="center">
         <Grid item xs={10}>
+          <Typography variant="h6" style={{ textAlign: "center" }}>
+            {title}
+          </Typography>
+          <Divider />
           <form onSubmit={handleSubmit}>
             <Box p={1}>
               <FormGroup>
                 <FormControl>
-                  <InputLabel>Upload File</InputLabel>
+                  <InputLabel>{title}</InputLabel>
                   <Input
                     type="file"
                     required
@@ -115,7 +151,7 @@ const Upload = ({ user, updateImages }) => {
                 </FormControl>
               </FormGroup>
             </Box>
-            {values.fileName && (
+            {(values.fileName || description) && (
               <>
                 <Box p={1}>
                   <FormGroup>
@@ -144,7 +180,7 @@ const Upload = ({ user, updateImages }) => {
                         color="primary"
                         startIcon={<CloudUploadIcon />}
                       >
-                        Upload
+                        {title}
                       </Button>
                     </FormControl>
                   </FormGroup>
@@ -155,7 +191,6 @@ const Upload = ({ user, updateImages }) => {
         </Grid>
       </Grid>
     </Section>
-    
   );
 };
 
