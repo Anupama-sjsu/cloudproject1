@@ -47,7 +47,6 @@ let App = () => {
   const [authState, setAuthState] = useState();
   const [user, setUser] = React.useState();
   let token = user && user.token;
-
   useEffect(() => {
     getFiles();
     return onAuthUIStateChange((nextAuthState, authData) => {
@@ -73,17 +72,17 @@ let App = () => {
   }, [token]);
 
   const getFiles = () => {
-    if(user && user.token) {
-    fetch("https://h04op1jbs4.execute-api.us-west-2.amazonaws.com/files", {
-      headers: {
-        Authorization: user.token,
-      },
-    })
-      .then((response) => response.json())
-      .then((result) => {
-        setFiles(result);
+    if (user && user.token) {
+      fetch("https://h04op1jbs4.execute-api.us-west-2.amazonaws.com/files", {
+        headers: {
+          Authorization: user.token,
+        },
       })
-      .catch((error) => console.log("error", error));
+        .then((response) => response.json())
+        .then((result) => {
+          setFiles(result);
+        })
+        .catch((error) => console.log("error", error));
     }
   };
 
@@ -95,18 +94,22 @@ let App = () => {
           <Grid container justify="center" alignContent="center">
             <Grid item xs>
               <Header user={user} />
-              <Upload user={user} updateFiles={getFiles} title="Upload File" method="POST" />
-              <ListFiles user={user} updateFiles={getFiles} files={files} />
+              <Upload
+                user={user}
+                updateFiles={getFiles}
+                title="Upload File"
+                method="POST"
+              />
+              {(files && files.length > 0) && (
+                <ListFiles user={user} updateFiles={getFiles} files={files} />
+              )}
             </Grid>
           </Grid>
         ) : (
           <Grid container justify="center" alignContent="center">
             <Grid item>
               <AmplifyAuthenticator usernameAlias="email">
-                <AmplifySignUp
-                  formFields={signUpFields}
-                  slot="sign-up"
-                />
+                <AmplifySignUp formFields={signUpFields} slot="sign-up" />
               </AmplifyAuthenticator>
             </Grid>
           </Grid>
@@ -114,6 +117,6 @@ let App = () => {
       </Container>
     </ThemeProvider>
   );
-}
+};
 
 export default App;
